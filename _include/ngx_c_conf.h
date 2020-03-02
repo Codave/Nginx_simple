@@ -31,6 +31,7 @@ public:
         }
         return m_instance;
     }
+    
     class CGarhuishou
     {
     public:
