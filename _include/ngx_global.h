@@ -7,7 +7,7 @@
 //一些全局变量的外部声明也放在这里
 
 //结构定义
-typedef struct
+typedef struct _CConfItem
 {
     char ItemName[50];
     char ItemContent[500];

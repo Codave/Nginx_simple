@@ -79,14 +79,15 @@ void ngx_log_stderr(int err,const char* fmt,...)
 
     //往标准错误【一般是屏幕】输出信息
     write(STDERR_FILENO,errstr,p-errstr);
-    
-    //往标准错误【一般是屏幕】输出信息    
-    write(STDERR_FILENO,errstr,p - errstr); //三章七节讲过，这个叫标准错误，一般指屏幕
 
     if(ngx_log.fd > STDERR_FILENO) //如果这是个有效的日志文件，本条件肯定成立，此时也才有意义将这个信息写到日志文件
     {
-        ngx_log_error_core(NGX_LOG_STDERR,err,(const char *)errstr); //这里有个\n，ngx_log_error_core还有个\n，所以写到日志会有一个空行多出来
+        //因为上边已经把err信息显示出来了，所以这里就不要显示了，否则显示重复了
+        err = 0;    //不要再次把错误信息弄到字符串里，否则字符串里重复了
+        p--;*p = 0; //把原来末尾的\n干掉，因为到ngx_log_err_core中还会加这个\n 
+        ngx_log_error_core(NGX_LOG_STDERR,err,(const char *)errstr); 
     }
+    
     return;
 }
 
