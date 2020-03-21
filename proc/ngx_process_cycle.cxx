@@ -65,16 +65,18 @@ void ngx_master_process_cycle()
 
     //从配置文件中读取要创建的worker进程数量
     CConfig* p_config = CConfig::GetInstance();
-    int workprocess = p_config->GetIntDefault("WorkerProcess",1);
+    int workprocess = p_config->GetIntDefault("WorkerProcesses",1); 
     ngx_start_worker_processes(workprocess);  //这里要创建worker子进程
 
     //创建子进程后，父进程的执行流程会返回到这里，子进程不会走进来
+
     sigemptyset(&set);
 
-    for(;;)
-    {
-        ngx_log_error_core(0,0,"haha--这是父进程，pid为%P",ngx_pid);
-    }
+    while(1);
+    // for(;;)
+    // {
+    //     ngx_log_error_core(0,0,"haha--这是父进程，pid为%P",ngx_pid);
+    // }
 
     return;
 }
@@ -113,15 +115,15 @@ static int ngx_spawn_process(int inum,const char* pprocname)
 }
 
 //描述：worker子进程的功能函数，每个woker子进程，就在这里循环着了（无限循环【处理网络事件和定时器事件以对外提供web服务】）
-static void ngx_worker_process_cycle(int inum,const char* pprocmask)
+static void ngx_worker_process_cycle(int inum,const char* pprocname)
 {
     //重新为子进程设置进程名，不要与父进程重复
     ngx_worker_process_init(inum);
-    ngx_setproctitle(pprocmask);
+    ngx_setproctitle(pprocname);
 
-    setvbuf(stdout,NULL,_IONBF,0);
+    //setvbuf(stdout,NULL,_IONBF,0);
     for(;;){
-        ngx_log_error_core(0,0,"good--这是子进程，编号为%d,pid为%P！",inum,ngx_pid);
+        //ngx_log_error_core(0,0,"good--这是子进程，编号为%d,pid为%P！",inum,ngx_pid);
     }
     return;
 }
