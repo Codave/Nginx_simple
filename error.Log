@@ -1,0 +1,50 @@
+2020/03/22 00:20:51 [stderr] 3301: nginx: sigaction(SIGHUP) succed!
+
+2020/03/22 00:20:51 [stderr] 3301: nginx: sigaction(SIGINT) succed!
+
+2020/03/22 00:20:51 [stderr] 3301: nginx: sigaction(SIGTERM) succed!
+
+2020/03/22 00:20:51 [stderr] 3301: nginx: sigaction(SIGCHILD) succed!
+
+2020/03/22 00:20:51 [stderr] 3301: nginx: sigaction(SIGQUIT) succed!
+
+2020/03/22 00:20:51 [stderr] 3301: nginx: sigaction(SIGIO) succed!
+
+2020/03/22 00:20:51 [stderr] 3301: nginx: sigaction(SIGSYS, SIG_IGN) succed!
+
+2020/03/22 00:21:29 [stderr] 3307: nginx: sigaction(SIGHUP) succed!
+
+2020/03/22 00:21:29 [stderr] 3307: nginx: sigaction(SIGINT) succed!
+
+2020/03/22 00:21:29 [stderr] 3307: nginx: sigaction(SIGTERM) succed!
+
+2020/03/22 00:21:29 [stderr] 3307: nginx: sigaction(SIGCHILD) succed!
+
+2020/03/22 00:21:29 [stderr] 3307: nginx: sigaction(SIGQUIT) succed!
+
+2020/03/22 00:21:29 [stderr] 3307: nginx: sigaction(SIGIO) succed!
+
+2020/03/22 00:21:29 [stderr] 3307: nginx: sigaction(SIGSYS, SIG_IGN) succed!
+
+2020/03/22 00:21:46 [stderr] 3402: nginx: sigaction(SIGHUP) succed!
+
+2020/03/22 00:21:46 [stderr] 3402: nginx: sigaction(SIGINT) succed!
+
+2020/03/22 00:21:46 [stderr] 3402: nginx: sigaction(SIGTERM) succed!
+
+2020/03/22 00:21:46 [stderr] 3402: nginx: sigaction(SIGCHILD) succed!
+
+2020/03/22 00:21:46 [stderr] 3402: nginx: sigaction(SIGQUIT) succed!
+
+2020/03/22 00:21:46 [stderr] 3402: nginx: sigaction(SIGIO) succed!
+
+2020/03/22 00:21:46 [stderr] 3402: nginx: sigaction(SIGSYS, SIG_IGN) succed!
+
+2020/03/22 00:22:36 [notice] 3404: signal 2 (SIGINT) received from 2634
+2020/03/22 00:22:56 [notice] 3403: signal 17 (SIGCHILD) received from 3404
+2020/03/22 00:22:56 [alert] 3403: pid = 3404 exited on signal 9!
+2020/03/22 00:38:19 [notice] 3520: master process ./nginx 3520 启动并开始运行......!
+2020/03/22 00:38:19 [notice] 3521: worker process 3521 启动并开始运行......!
+2020/03/22 00:38:19 [notice] 3522: worker process 3522 启动并开始运行......!
+2020/03/22 00:38:19 [notice] 3523: worker process 3523 启动并开始运行......!
+2020/03/22 00:38:19 [notice] 3524: worker process 3524 启动并开始运行......!

@@ -60,6 +60,7 @@ void ngx_master_process_cycle()
             strcat(title,g_os_argv[i]);
         }
         ngx_setproctitle(title);    //设置标题
+        ngx_log_error_core(NGX_LOG_NOTICE,0,"%s %P 启动并开始运行......!",title,ngx_pid); //设置标题时顺便记录下来进程名，进程id等信息到日志
     }
     //首先我设置主进程标题--------end
 
@@ -72,11 +73,12 @@ void ngx_master_process_cycle()
 
     sigemptyset(&set);
 
-    while(1);
-    // for(;;)
-    // {
-    //     ngx_log_error_core(0,0,"haha--这是父进程，pid为%P",ngx_pid);
-    // }
+    for(;;)
+    {
+        // ngx_log_error_core(0,0,"haha--这是父进程，pid为%P",ngx_pid);
+        sigsuspend(&set);
+        sleep(1);
+    }
 
     return;
 }
@@ -116,13 +118,18 @@ static int ngx_spawn_process(int inum,const char* pprocname)
 
 //描述：worker子进程的功能函数，每个woker子进程，就在这里循环着了（无限循环【处理网络事件和定时器事件以对外提供web服务】）
 static void ngx_worker_process_cycle(int inum,const char* pprocname)
-{
+{   
+    //设置一下变量
+    ngx_process = NGX_PROCESS_WORKER;  //设置进程的类型，是worker进程
+
     //重新为子进程设置进程名，不要与父进程重复
     ngx_worker_process_init(inum);
     ngx_setproctitle(pprocname);
+    ngx_log_error_core(NGX_LOG_NOTICE,0,"%s %P 启动并开始运行......!",pprocname,ngx_pid); //设置标题时顺便记录下来进程名，进程id等信息到日志
 
     //setvbuf(stdout,NULL,_IONBF,0);
     for(;;){
+        sleep(1);
         //ngx_log_error_core(0,0,"good--这是子进程，编号为%d,pid为%P！",inum,ngx_pid);
     }
     return;
