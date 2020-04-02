@@ -1,9 +1,0 @@
-2020/03/22 04:24:17 [stderr] 4324: nginx: CSocekt::Initialize()中bind()失败,i=0. (13: Permission denied) 
-2020/03/22 04:24:17 [stderr] 4324: nginx: 程序退出，再见了！
-2020/03/22 04:25:02 [info] 4326: 监听80端口成功!
-2020/03/22 04:25:02 [info] 4326: 监听443端口成功!
-2020/03/22 04:25:02 [notice] 4327: master process ./nginx 4327 启动并开始运行......!
-2020/03/22 04:25:02 [notice] 4328: worker process 4328 启动并开始运行......!
-2020/03/22 04:25:02 [notice] 4329: worker process 4329 启动并开始运行......!
-2020/03/22 04:25:02 [notice] 4330: worker process 4330 启动并开始运行......!
-2020/03/22 04:25:02 [notice] 4331: worker process 4331 启动并开始运行......!

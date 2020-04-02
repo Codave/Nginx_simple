@@ -27,6 +27,7 @@ CConfig::~CConfig()
         delete (*pos);
     }
     m_ConfigItemList.clear();
+    return;
 }
 
 //装载配置文件

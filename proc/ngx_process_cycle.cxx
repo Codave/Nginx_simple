@@ -6,6 +6,7 @@
 #include<string.h>
 #include<signal.h>
 #include<errno.h>
+#include<unistd.h>
 
 #include "ngx_func.h"
 #include "ngx_macro.h"
@@ -129,8 +130,9 @@ static void ngx_worker_process_cycle(int inum,const char* pprocname)
 
     //setvbuf(stdout,NULL,_IONBF,0);
     for(;;){
-        sleep(1);
+        
         //ngx_log_error_core(0,0,"good--这是子进程，编号为%d,pid为%P！",inum,ngx_pid);
+        ngx_process_events_and_timers();//处理网络事件和定时器事件
     }
     return;
 }
@@ -142,5 +144,8 @@ static void ngx_worker_process_init(int inum){
     if(sigprocmask(SIG_SETMASK,&set,NULL)==-1){
         ngx_log_error_core(NGX_LOG_ALERT,errno,"ngx_worker_process_init()中sigprocmask()失败!");
     }
+
+    g_socket.ngx_epoll_init();  //初始化epoll相关内容，同时往监听socket上增加监听事件，从而开始让监听端口履行其职责
+
     return;
 }
