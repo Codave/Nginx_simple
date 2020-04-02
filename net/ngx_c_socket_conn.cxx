@@ -19,6 +19,7 @@
 #include "ngx_global.h"
 #include "ngx_func.h"
 #include "ngx_c_socket.h"
+#include "ngx_c_memory.h"
 
 //从连接池中获得一个空闲连接
 lpngx_connection_t CSocket::ngx_get_connection(int isock)
@@ -41,6 +42,13 @@ lpngx_connection_t CSocket::ngx_get_connection(int isock)
     //(2)复制出来后，清空并给适当值
     memset(c,0,sizeof(ngx_connection_t));
     c->fd = isock;      //套接字要保存起来
+    c->curStat = _PKG_HD_INIT;  //收包状态处于  初始状态
+
+    c->precvbuf = c->dataHeadInfo;
+    c->irecvlen = sizeof(COMM_PKG_HEADER);
+
+    c->ifnewrecvMem = false;
+    c->pnewMemPointer = NULL;
 
     //(3)
     c->instance = !instance;
@@ -60,5 +68,18 @@ void CSocket::ngx_free_connection(lpngx_connection_t c)
 
     m_pfree_connections = c;                             //修改 原来的链头使链头指向新节点
     ++m_free_connection_n;                               //空闲连接多1    
+    return;
+}
+
+//用户连入，accept4()时，得到的socket在处理中产生失败，则资源用这个函数释放
+//我们把ngx_close_accepted_connection()函数改名为让名字更通用，并从文件ngx_socket_accept.cxx迁移到本文件中，并改造其中代码，注意顺序
+void CSocket::ngx_close_connection(lpngx_connection_t c)
+{
+    if(close(c->fd) == -1)
+    {
+        ngx_log_error_core(NGX_LOG_ALERT,errno,"CSocekt::ngx_close_accepted_connection()中close(%d)失败!",c->fd);  
+    }
+    c->fd = -1; 
+    ngx_free_connection(c);
     return;
 }

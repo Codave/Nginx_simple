@@ -23,6 +23,7 @@
 #include "ngx_global.h"
 #include "ngx_func.h"
 #include "ngx_c_socket.h"
+#include "ngx_c_memory.h"
 
 //构造函数
 CSocket::CSocket()
@@ -36,7 +37,8 @@ CSocket::CSocket()
     m_pconnections = NULL;      //连接池【连接数组】  先给空
     m_pfree_connections = NULL; //连接池中空闲的连接池
 
-
+    m_iLenPkgHeader = sizeof(COMM_PKG_HEADER);  //包头的sizeof值
+    m_iLenMsgHeader = sizeof(STRUC_MSG_HEADER); //消息头的sizeof值
 
     return;
 }
@@ -58,8 +60,26 @@ CSocket::~CSocket()
         delete[] m_pconnections;
     }
 
+    //(3)接收消息队列中内容释放
+    clearMsgRecvQueue();
+
     return;
 }
+
+//清理接收消息队列，注意这个函数的写法
+void CSocket::clearMsgRecvQueue()
+{
+    char* sTmpMempoint;
+    CMemory *p_memory = CMemory::GetInstance();
+
+    while(!m_MsgRecvQueue.empty())
+    {
+        sTmpMempoint = m_MsgRecvQueue.front();
+        m_MsgRecvQueue.pop_front();
+        p_memory->FreeMemory(sTmpMempoint);
+    }
+}
+
 
 //初始化函数
 //成功返回true，失败返回false
@@ -268,8 +288,8 @@ int CSocket::ngx_epoll_init()
 //epoll增加事件
 //返回值:成功返回1，失败返回-1
 int CSocket::ngx_epoll_add_event(int fd,                         //fd:句柄，一个socket
-                                int readevent,int writeevent,    //readevent：表示是否是个读事件，0是，1不是
-                                uint32_t otherflag,              //writeevent：表示是否是个写事件，0是，1不是
+                                int readevent,int writeevent,    //readevent：表示是否是个读事件，0是，1不是  writeevent：表示是否是个写事件，0是，1不是
+                                uint32_t otherflag,              // ET:EPOLLET  LT:0
                                 uint32_t eventtype,              //eventtype：事件类型  ，一般就是用系统的枚举值，增加，删除，修改等;
                                 lpngx_connection_t c             //c：对应的连接池中的连接的指针
                                 )

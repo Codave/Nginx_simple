@@ -24,6 +24,8 @@
 //ngx_process_cycle.cxx [ ngx_worker_process_cycle() ] -> 
 //ngx_event.cxx [ ngx_process_events_and_timers() ] ->  
 //ngx_c_socket.cxx [ngx_epoll_process_events()]   
+
+// 在哪里什么时候被绑定 ngx_c_socket.cxx [  ngx_epoll_init() ]  c->rhandler = &CSocket::ngx_event_accept;
 void CSocket::ngx_event_accept(lpngx_connection_t oldc)
 {
     struct sockaddr             mysockaddr; //远端客户端的socket地址
@@ -111,7 +113,7 @@ void CSocket::ngx_event_accept(lpngx_connection_t oldc)
             if(setnonblocking(s) == false)
             {
                 //设置非阻塞居然失败
-                ngx_close_accepted_connection(newc);
+                ngx_close_connection(newc);
                 return; //直接返回
             }
         }
@@ -121,13 +123,13 @@ void CSocket::ngx_event_accept(lpngx_connection_t oldc)
         newc->rhandler = &CSocket::ngx_wait_request_handler;
         if(ngx_epoll_add_event(s,                 //socket句柄
                                 1,0,              //读，写
-                                EPOLLET,          //其他补充标记【EPOLLET(高速模式，边缘触发ET)】
+                                0,                //其他补充标记【EPOLLET(高速模式，边缘触发ET)】 0:LT
                                 EPOLL_CTL_ADD,    //事件类型【增加，还有删除/修改】                                    
                                 newc              //连接池中的连接
                                 ) == -1)
         {
             //增加事件失败，失败日志在ngx_epoll_add_event中写过了，因此这里不多写啥；
-            ngx_close_accepted_connection(newc);
+            ngx_close_connection(newc);
             return; //直接返回
         } 
 
@@ -136,15 +138,3 @@ void CSocket::ngx_event_accept(lpngx_connection_t oldc)
     return;
 }
 
-//用户连入，accept4()时，得到的socket在处理中产生失败，则资源用这个函数释放
-void CSocket::ngx_close_accepted_connection(lpngx_connection_t c)
-{
-    int fd = c->fd;
-    ngx_free_connection(c);
-    c->fd = -1; 
-    if(close(fd) == -1)
-    {
-        ngx_log_error_core(NGX_LOG_ALERT,errno,"CSocekt::ngx_close_accepted_connection()中close(%d)失败!",fd);  
-    }
-    return;
-}
