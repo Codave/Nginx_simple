@@ -14,6 +14,7 @@
 //#include <sys/socket.h>
 #include <sys/ioctl.h> //ioctl
 #include <arpa/inet.h>
+#include <pthread.h>   //多线程
 
 #include "ngx_c_conf.h"
 #include "ngx_macro.h"
@@ -21,6 +22,7 @@
 #include "ngx_func.h"
 #include "ngx_c_socket.h"
 #include "ngx_c_memory.h"
+#include "ngx_c_lockmutex.h"
 
 //来数据时候的处理，当连接上有数据来的时候，本函数会被ngx_epoll_process_events()所调用  ,官方的类似函数为ngx_http_wait_request_handler();
 // 在哪里什么时候被绑定 ngx_c_socket_accept.cxx[ ngx_event_accept ] newc->rhandler = &CSocket::ngx_wait_request_handler;
@@ -136,15 +138,9 @@ ssize_t CSocket::recvproc(lpngx_connection_t c,char *buff,ssize_t buflen)  //ssi
 
         //所有从这里走下来的错误，都认为异常：意味着我们要关闭客户端套接字要回收连接池中连接；
 
-        //errno参考：http://dhfapiran1.360drm.com        
         if(errno == ECONNRESET)  //#define ECONNRESET 104 /* Connection reset by peer */
         {
-            //如果客户端没有正常关闭socket连接，却关闭了整个运行程序【真是够粗暴无理的，应该是直接给服务器发送rst包而不是4次挥手包完成连接断开】，那么会产生这个错误            
-            //10054(WSAECONNRESET)--远程程序正在连接的时候关闭会产生这个错误--远程主机强迫关闭了一个现有的连接
-            //算常规错误吧【普通信息型】，日志都不用打印，没啥意思，太普通的错误
             //do nothing
-
-            //....一些大家遇到的很普通的错误信息，也可以往这里增加各种，代码要慢慢完善，一步到位，不可能，很多服务器程序经过很多年的完善才比较圆满；
         }
         else
         {
@@ -152,8 +148,6 @@ ssize_t CSocket::recvproc(lpngx_connection_t c,char *buff,ssize_t buflen)  //ssi
             ngx_log_stderr(errno,"CSocekt::recvproc()中发生错误，我打印出来看看是啥错误！");  //正式运营时可以考虑这些日志打印去掉
         } 
         
-        //ngx_log_stderr(0,"连接被客户端 非 正常关闭！");
-
         //这种真正的错误就要，直接关闭套接字，释放连接池中连接了
         ngx_close_connection(c);
         return -1;
@@ -231,8 +225,11 @@ void CSocket::ngx_wait_request_handler_proc_p1(lpngx_connection_t c)
 void CSocket::ngx_wait_request_handler_proc_plast(lpngx_connection_t c)
 {
     //把这段内存放到消息队列中来；
-    inMsgRecvQueue(c->pnewMemPointer);
-    //......这里可能考虑触发业务逻辑，怎么触发业务逻辑，这个代码以后再考虑扩充。。。。。。
+    int irmqc = 0; //消息队列当前信息数量
+    inMsgRecvQueue(c->pnewMemPointer,irmqc);
+    
+    //激发线程池中的某个线程来处理业务逻辑
+    g_threadpool.Call(irmqc);
     
     c->ifnewrecvMem    = false;            //内存不再需要释放，因为你收完整了包，这个包被上边调用inMsgRecvQueue()移入消息队列，那么释放内存就属于业务逻辑去干，不需要回收连接到连接池中干了
     c->pnewMemPointer  = NULL;
@@ -242,45 +239,35 @@ void CSocket::ngx_wait_request_handler_proc_plast(lpngx_connection_t c)
     return;
 }
 
-//---------------------------------------------------------------
 //当收到一个完整包之后，将完整包入消息队列，这个包在服务器端应该是 消息头+包头+包体 格式
-void CSocket::inMsgRecvQueue(char *buf) //buf这段内存 ： 消息头 + 包头 + 包体
+void CSocket::inMsgRecvQueue(char *buf,int &irmqc) //buf这段内存 ： 消息头 + 包头 + 包体
 {
+    CLock lock(&m_recvMessageQueueMutex);
     m_MsgRecvQueue.push_back(buf);	
-
-    //....其他功能待扩充，这里要记住一点，这里的内存都是要释放的，否则。。。。。。。。。。日后增加释放这些内存的代码
-    //...而且逻辑处理应该要引入多线程，所以这里要考虑临界问题
-    //....
-
-    //临时在这里调用一下该函数，以防止接收消息队列过大
-    tmpoutMsgRecvQueue();   //.....临时，后续会取消这行代码
-
-    //为了测试方便，因为本函数意味着收到了一个完整的数据包，所以这里打印一个信息
-    ngx_log_stderr(0,"非常好，收到了一个完整的数据包【包头+包体】！");  
+    ++m_iRecvMsgQueueCount;
+    irmqc = m_iRecvMsgQueueCount;
+     
 }
 
-//临时函数，用于将Msg中消息干掉
-void CSocket::tmpoutMsgRecvQueue()
+//从消息队列中把一个包提取出来以备后续处理
+char* CSocket::outMsgRecvQueue()
 {
-    //日后可能引入outMsgRecvQueue()，这个函数可能需要临界......
-    if(m_MsgRecvQueue.empty())  //没有消息直接退出
+    CLock lock(&m_recvMessageQueueMutex);
+    if(m_MsgRecvQueue.empty())
     {
-        return;
+        return NULL;
     }
-    int size = m_MsgRecvQueue.size();
-    if(size < 1000) //消息不超过1000条就不处理先
-    {
-        return; 
-    }
-    //消息达到1000条
-    CMemory *p_memory = CMemory::GetInstance();		
-    int cha = size - 500;
-    for(int i = 0; i < cha; ++i)
-    {
-        //一次干掉一堆
-        char *sTmpMsgBuf = m_MsgRecvQueue.front();//返回第一个元素但不检查元素存在与否
-        m_MsgRecvQueue.pop_front();               //移除第一个元素但不返回	
-        p_memory->FreeMemory(sTmpMsgBuf);         //先释放掉把；
-    }        
+    char* sTmpMsgBuf = m_MsgRecvQueue.front();
+    m_MsgRecvQueue.pop_front();
+    --m_iRecvMsgQueueCount;
+    return sTmpMsgBuf;
+}
+
+//消息处理线程主函数，专门处理各种接收到的TCP消息
+//pMsgBuf：发送过来的消息缓冲区，消息本身是自解释的，通过包头可以计算整个包长
+//         消息本身格式【消息头+包头+包体】 
+void CSocket::threadRecvProcFunc(char *pMsgBuf)
+{
+
     return;
 }

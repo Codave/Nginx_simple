@@ -3,10 +3,10 @@
 
 ifeq ($(DEBUG),true)
 # -g是生成调试信息。GUN调试器可以利用该信息
-CC = g++ -g
+CC = g++ -std=c++11 -g
 VERSION = debug
 else
-CC = g++
+CC = g++ -std=c++11
 VERSION = release
 endif
 
@@ -49,7 +49,7 @@ endif
 
 $(BIN):$(LINK_OBJ)
 	@echo "---------------------build $(VERSION) mode------------------------------!!!"
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ -lpthread
 
 $(LINK_OBJ_DIR)/%.o:%.cxx
 	$(CC) -I$(INCLUDE_PATH) -o $@ -c $(filter %.cxx,$^)

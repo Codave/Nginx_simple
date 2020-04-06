@@ -141,6 +141,17 @@ u_char *ngx_vslprintf(u_char *buf, u_char *last,const char *fmt,va_list args)
                 }
                 break;  //这break掉，直接跳道switch后边的代码去执行,这种凡是break的，都不做fmt++;  *********************【switch后仍旧需要进一步处理】
 
+            case 'i':
+                if (sign) 
+                {
+                    i64 = (int64_t) va_arg(args, intptr_t);
+                } 
+                else 
+                {
+                    ui64 = (uint64_t) va_arg(args, uintptr_t);
+                }
+                break; 
+
             case 's': //一般用于显示字符串
                 p = va_arg(args, u_char *); //va_arg():遍历可变参数，var_arg的第二个参数表示遍历的这个可变的参数的类型
 

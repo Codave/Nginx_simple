@@ -17,6 +17,7 @@
 // #include<sys/socket.h>
 #include<sys/ioctl.h> //ioctl
 #include<arpa/inet.h>
+#include<pthread.h> 
 
 #include "ngx_c_conf.h"
 #include "ngx_macro.h"
@@ -37,8 +38,14 @@ CSocket::CSocket()
     m_pconnections = NULL;      //连接池【连接数组】  先给空
     m_pfree_connections = NULL; //连接池中空闲的连接池
 
+    //一些和网络通讯有关的常用变量
     m_iLenPkgHeader = sizeof(COMM_PKG_HEADER);  //包头的sizeof值
     m_iLenMsgHeader = sizeof(STRUC_MSG_HEADER); //消息头的sizeof值
+
+    m_iRecvMsgQueueCount = 0;
+
+    //多线程相关
+    pthread_mutex_init(&m_recvMessageQueueMutex,NULL);   //互斥量初始化
 
     return;
 }
@@ -62,6 +69,9 @@ CSocket::~CSocket()
 
     //(3)接收消息队列中内容释放
     clearMsgRecvQueue();
+
+    //(4)多线程相关
+    pthread_mutex_destroy(&m_recvMessageQueueMutex);    //互斥量释放
 
     return;
 }

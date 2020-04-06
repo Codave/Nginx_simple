@@ -9,7 +9,7 @@ class CMemory
 private:
     CMemory(){}
 public:
-    ~CMemory(){}
+    ~CMemory(){};
 
 private:
     static CMemory *m_instance;

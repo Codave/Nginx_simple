@@ -134,6 +134,8 @@ static void ngx_worker_process_cycle(int inum,const char* pprocname)
         //ngx_log_error_core(0,0,"good--这是子进程，编号为%d,pid为%P！",inum,ngx_pid);
         ngx_process_events_and_timers();//处理网络事件和定时器事件
     }
+
+    g_threadpool.StopAll();
     return;
 }
 
@@ -144,6 +146,15 @@ static void ngx_worker_process_init(int inum){
     if(sigprocmask(SIG_SETMASK,&set,NULL)==-1){
         ngx_log_error_core(NGX_LOG_ALERT,errno,"ngx_worker_process_init()中sigprocmask()失败!");
     }
+
+    //线程池代码，率先创建，至少要比和socket相关的内容优先
+    CConfig* p_config = CConfig::GetInstance();
+    int tmpthreadnums = p_config->GetIntDefault("ProcMsgRecvWorkThreadCount",5);    //处理接收到的消息的线程池中线程数量
+    if(g_threadpool.Create(tmpthreadnums) == false)
+    {
+        exit(-2);
+    }
+    sleep(1);
 
     g_socket.ngx_epoll_init();  //初始化epoll相关内容，同时往监听socket上增加监听事件，从而开始让监听端口履行其职责
 

@@ -5,6 +5,7 @@
 #include<signal.h>
 
 #include "ngx_c_socket.h"
+#include "ngx_c_threadpool.h"
 
 //一些比较通用的定义放在这里
 //一些全局变量的外部声明也放在这里
@@ -24,13 +25,14 @@ typedef struct
 }ngx_log_t;
 
 //外部全局量声明
-extern size_t   g_argvneedmem;
-extern size_t   g_envneedmem;
-extern int      g_os_argc;
-extern char**   g_os_argv;
-extern char*    gp_envmem;
-extern int      g_daemonized;
-extern CSocket  g_socket;
+extern size_t       g_argvneedmem;
+extern size_t       g_envneedmem;
+extern int          g_os_argc;
+extern char**       g_os_argv;
+extern char*        gp_envmem;
+extern int          g_daemonized;
+extern CSocket      g_socket;
+extern CThreadPool  g_threadpool;
 
 extern pid_t        ngx_pid;
 extern pid_t        ngx_parent;

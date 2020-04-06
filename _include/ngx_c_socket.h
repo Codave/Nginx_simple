@@ -67,9 +67,11 @@ class CSocket
 public:
     CSocket();
     virtual ~CSocket();
+    virtual bool Initialize();
 
 public:
-    virtual bool Initialize();          //初始化函数
+    char* outMsgRecvQueue();
+    virtual void threadRecvProcFunc(char* pMsgBuf);
 
 public:
     int ngx_epoll_init();   //epoll功能初始化 epoll_create
@@ -90,8 +92,8 @@ private:
     ssize_t recvproc(lpngx_connection_t c,char *buff,ssize_t buflen);  //接收从客户端来的数据专用函数
 	void ngx_wait_request_handler_proc_p1(lpngx_connection_t c);       //包头收完整后的处理，我们称为包处理阶段1：写成函数，方便复用	                                                                   
 	void ngx_wait_request_handler_proc_plast(lpngx_connection_t c);    //收到一个完整包后的处理，放到一个函数中，方便调用
-	void inMsgRecvQueue(char *buf);                                    //收到一个完整消息后，入消息队列
-	void tmpoutMsgRecvQueue(); //临时清除对列中消息函数，测试用，将来会删除该函数
+	void inMsgRecvQueue(char *buf,int& irmqc);                                    //收到一个完整消息后，入消息队列
+	//void tmpoutMsgRecvQueue(); //临时清除对列中消息函数，测试用，将来会删除该函数
     void clearMsgRecvQueue();
 
 
@@ -119,7 +121,11 @@ private:
     size_t          m_iLenPkgHeader;
     size_t          m_iLenMsgHeader;
     //消息队列
-    std::list<char*>   m_MsgRecvQueue;  //接收数据消息队列
+    std::list<char*>   m_MsgRecvQueue;          //接收数据消息队列
+    int                m_iRecvMsgQueueCount;    //接收消息队列大小
+
+    //多线程
+    pthread_mutex_t    m_recvMessageQueueMutex; //收消息队列互斥量
 };
 
 #endif
